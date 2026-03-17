@@ -2,13 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastro ADP</title>
+    <title>Restrições/preferências de Horários</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; color: #333; }
         h2 { color: #2c3e50; }
         #form-adp { justify-items: center; max-width: 1200px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        #nome { padding: 10px;  max-width: 400px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; margin-bottom: 10px; }
+        #nome { padding: 10px; position: relative; top: -127px; left: 1000px; font-size: 16px; margin-bottom: 10px; color: brown; font-weight: bold; }
         #grid-dias { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px; }
         .dia { border: 1px solid #e1e8ed; padding: 15px; border-radius: 8px; width: 190px; background: #fafafa; border-top: 4px solid #3498db; }
         .dia h3 { margin-top: 0; color: #3498db; }
@@ -16,6 +16,7 @@
         .opts-dia { padding: 10px; font-size: 0.85em; color: #e74c3c; font-weight: bold; }
         .opts-turno { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee; }
         input[type="text"] { border: 1px solid #ccc; border-radius: 4px; padding: 6px; width: 90%; margin-top: 5px; font-size: 0.9em; }
+        select { border: 1px solid #ccc; border-radius: 4px; padding: 4px; margin-left: 5px; font-size: 0.9em; cursor: pointer; }
         .lbl-restr-turno { font-size: 0.85em; color: #e74c3c; font-weight: bold; }
         .disabled-text { color: #aaa !important; }
         .dia.selecionado { background-color: #e8f4fd; border-color: #3498db; }
@@ -25,18 +26,21 @@
         .observacoes li { margin-bottom: 8px; }
         button { margin-top: 25px; padding: 12px 25px; background: #3498db; color: #fff; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
         button:hover { background: #2980b9; }
+        button:disabled { background: #95a5a6; cursor: not-allowed; }
+        
+        .form-bloqueado { opacity: 0.5; filter: grayscale(100%); pointer-events: none; transition: all 0.3s ease; }
     </style>
 </head>
 <body>
 
     <form id="form-adp">
-        <h2>Preferências de ADP</h2>
+        <h2>Restrições/preferências de horários</h2>
+        <h3 style="color: #bbb6b6;">Selecione os dias e turnos que você não estará disponível (leia as observações abaixo)</h3>
+        <span type="email" id="nome"></span>
         <div id="buttonDiv" style="margin-bottom: 15px;"></div>
         <div id="login-aviso" style="color: #e74c3c; font-weight: bold; margin-bottom: 10px; display: none;"></div>
         
-        <!-- Agrupamento das opções inicialmente oculto -->
-        <div id="form-content" style="display: none;justify-items: center;">
-            <input type="email" id="nome" placeholder="Faça login com o Google acima para liberar as opções..." required readonly style="background-color: #e9ecef; cursor: not-allowed;">
+        <div id="form-content" class="form-bloqueado" style="justify-items: center;">
             <div id="grid-dias"></div>
             
             <div class="observacoes">
@@ -45,41 +49,38 @@
                     <li>A comissão tentará atender a todas as solicitações, mas poderão ocorrer conflitos de preferência e de espaço físico.</li>
                     <li>Não havendo necessidade de restrição de horários, considere fortemente a possibilidade de não os cadastrar.</li>
                     <li>Ao escolher os seus dias, atente aos horários habituais de oferta dos seus cursos.</li>
+                    <li>Caso compartilhe horários com outros professores combine os horários de forma a evitar conflitos.</li>
                     <li>Caso haja conflitos que impeçam o atendimento de restrições, as justificativas informadas serão avaliadas.</li>
                     <li>Se desejar mudanças após a divulgação dos horários, converse previamente com os professores afetados, considerando o espaço físico, e encaminhem a nova sugestão para avaliação da comissão através de e-mail com cópia para todos.</li>
                 </ul>
             </div>
 
-
-            <div class="observacoes" style="background-color: #e74c3c;">
+<!--             <div class="observacoes" id="falta" style="background-color: #e74c3c;display: none;">
                 <strong>Falta ainda:</strong>
                 <ul>
                     <li>- Fazer uma planilha que receba as restrições no formato que o aplicativo que gera horário aceita. Colocar na planilha lista de e-mails e período que o formulário estará disponível.</li>
                 </ul>
-            </div>
+            </div> -->
 
-            <button type="submit">Enviar</button>
+            <button type="submit" id="btn-enviar">Enviar</button>
         </div>
     </form>
 
     <script>
-        // Configuração do Google Sign-In
         function handleCredentialResponse(response) {
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
             
             if (payload.email.endsWith('@ifsc.edu.br')) {
-                document.getElementById('nome').value = payload.email;
+                document.getElementById('nome').innerText = payload.email;
                 document.getElementById('login-aviso').style.display = 'none';
                 document.getElementById('buttonDiv').style.display = 'none';
-                // Mostra as opções de formulário após o login com sucesso
-                document.getElementById('form-content').style.display = 'block';
+                document.getElementById('form-content').classList.remove('form-bloqueado');
             } else {
                 const aviso = document.getElementById('login-aviso');
                 aviso.textContent = "Aviso: Faça login utilizando o seu e-mail institucional (@ifsc.edu.br).";
                 aviso.style.display = 'block';
-                document.getElementById('nome').value = "";
-                // Mantém as opções ocultas em caso de erro
-                document.getElementById('form-content').style.display = 'none';
+                document.getElementById('nome').innerText = "";
+                document.getElementById('form-content').classList.add('form-bloqueado');
             }
         }
 
@@ -96,7 +97,6 @@
             );
         };
 
-        // 1. Geração dinâmica dos dias (HTML atualizado)
         const container = document.getElementById('grid-dias');
         const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
         const turnos = ['Manhã', 'Tarde', 'Noite'];
@@ -107,9 +107,13 @@
                     <label><input type="checkbox" class="turno-chk" data-turno="${t}"> ${t}</label>
                     <div class="opts-turno" style="display:none;">
                         <label class="lbl-restr-turno">
-                            <input type="checkbox" class="restr-turno"> Restringir
+                            Status:
+                            <select class="restr-turno">
+                                <option value="Evitar" selected>Evitar</option>
+                                <option value="Indisponivel">Indisponível</option>
+                            </select>
                         </label>
-                        <input type="text" class="just-turno" placeholder="Justificativa do turno..." style="display:none;">
+                        <input type="text" class="just-turno" placeholder="Justificativa da indisponibilidade..." style="display:none;">
                     </div>
                 </div>
             `).join('');
@@ -117,10 +121,16 @@
             container.innerHTML += `
                 <div class="dia" data-nome="${dia}">
                     <h3>${dia}</h3>
-                    <label><input type="checkbox" class="dia-int"> Dia Inteiro (ADP)</label>
+                    <label><input type="checkbox" class="dia-int"> Dia Inteiro </label>
                     <div class="opts-dia" style="display:none;">
-                        <label class="lbl-restr-dia"><input type="checkbox" class="restr-dia"> Restringir</label>
-                        <input type="text" class="just-dia" placeholder="Justificativa do dia..." style="display:none;">
+                        <label class="lbl-restr-dia">
+                            Status:
+                            <select class="restr-dia">
+                                <option value="Evitar" selected>Evitar</option>
+                                <option value="Indisponivel">Indisponível</option>
+                            </select>
+                        </label>
+                        <input type="text" class="just-dia" placeholder="Justificativa da indisponibilidade..." style="display:none;">
                     </div>
                     <hr style="border:0; border-top: 1px solid #eee; margin: 15px 0;">
                     <div class="turnos-box">${turnosHtml}</div>
@@ -128,16 +138,14 @@
             `;
         });
 
-        // 2. Lógica de Validação com Desabilitação (Cinza)
         function atualizarLimites() {
             const diasInt = document.querySelectorAll('.dia-int:checked').length;
             const turnosSel = document.querySelectorAll('.turno-chk:checked').length;
-            const diasRestr = document.querySelectorAll('.restr-dia:checked').length;
-            const turnosRestr = document.querySelectorAll('.restr-turno:checked').length;
+            const diasRestr = Array.from(document.querySelectorAll('.restr-dia')).filter(s => s.value === 'Indisponivel').length;
+            const turnosRestr = Array.from(document.querySelectorAll('.restr-turno')).filter(s => s.value === 'Indisponivel').length;
 
             const maxTurnos = diasInt === 2 ? 0 : (diasInt === 1 ? 2 : 5);
 
-            // Bloqueio de Dias Inteiros
             document.querySelectorAll('.dia-int').forEach(cb => {
                 if (!cb.checked) {
                     cb.disabled = diasInt >= 2;
@@ -145,15 +153,13 @@
                 }
             });
 
-            // Bloqueio de Restrição de Dia (Max 1)
-            document.querySelectorAll('.restr-dia').forEach(cb => {
-                if (!cb.checked) {
-                    cb.disabled = diasRestr >= 1;
-                    cb.parentElement.classList.toggle('disabled-text', cb.disabled);
+            document.querySelectorAll('.restr-dia').forEach(sel => {
+                const optIndisp = sel.querySelector('option[value="Indisponivel"]');
+                if (sel.value !== 'Indisponivel') {
+                    optIndisp.disabled = diasRestr >= 1;
                 }
             });
 
-            // Bloqueio de Turnos
             document.querySelectorAll('.turno-chk').forEach(cb => {
                 const isDiaInt = cb.closest('.dia').querySelector('.dia-int').checked;
                 if (!cb.checked) {
@@ -162,68 +168,78 @@
                 }
             });
 
-            // Bloqueio de Restrição de Turno (Max 2)
-            document.querySelectorAll('.restr-turno').forEach(cb => {
-                if (!cb.checked) {
-                    cb.disabled = turnosRestr >= 2;
-                    cb.parentElement.classList.toggle('disabled-text', cb.disabled);
+            document.querySelectorAll('.restr-turno').forEach(sel => {
+                const optIndisp = sel.querySelector('option[value="Indisponivel"]');
+                if (sel.value !== 'Indisponivel') {
+                    optIndisp.disabled = turnosRestr >= 2;
                 }
             });
         }
 
         document.addEventListener('change', e => {
             const el = e.target;
-            if (!el.matches('input[type="checkbox"]')) return;
+            if (!el.matches('input[type="checkbox"]') && !el.matches('select')) return;
 
             const box = el.closest('.dia');
 
-            // Dia Inteiro
             if (el.classList.contains('dia-int')) {
                 box.classList.toggle('selecionado', el.checked);
                 box.querySelector('.opts-dia').style.display = el.checked ? 'block' : 'none';
                 if (!el.checked) {
-                    box.querySelector('.restr-dia').checked = false;
+                    box.querySelector('.restr-dia').value = 'Evitar';
                     box.querySelector('.just-dia').style.display = 'none';
+                    box.querySelector('.just-dia').value = '';
                 }
                 box.querySelectorAll('.turno-chk, .restr-turno').forEach(t => {
-                    t.checked = false;
+                    if (t.tagName === 'INPUT') t.checked = false;
+                    if (t.tagName === 'SELECT') t.value = 'Evitar';
                     t.disabled = el.checked; 
                 });
-                box.querySelectorAll('.opts-turno, .just-turno').forEach(opt => opt.style.display = 'none');
+                box.querySelectorAll('.opts-turno, .just-turno').forEach(opt => {
+                    opt.style.display = 'none';
+                    if (opt.tagName === 'INPUT') opt.value = '';
+                });
                 box.querySelectorAll('.turno').forEach(t => t.classList.remove('selecionado'));
             }
             
-            // Restrição Dia
             if (el.classList.contains('restr-dia')) {
-                box.querySelector('.just-dia').style.display = el.checked ? 'block' : 'none';
+                box.querySelector('.just-dia').style.display = el.value === 'Indisponivel' ? 'block' : 'none';
+                if (el.value !== 'Indisponivel') box.querySelector('.just-dia').value = '';
             }
 
-            // Check de Turno
             if (el.classList.contains('turno-chk')) {
                 el.closest('.turno').classList.toggle('selecionado', el.checked);
                 const optsTurno = el.closest('.turno').querySelector('.opts-turno');
                 optsTurno.style.display = el.checked ? 'block' : 'none';
                 if (!el.checked) {
-                    optsTurno.querySelector('.restr-turno').checked = false;
+                    optsTurno.querySelector('.restr-turno').value = 'Evitar';
                     optsTurno.querySelector('.just-turno').style.display = 'none';
+                    optsTurno.querySelector('.just-turno').value = '';
                 }
             }
 
-            // Restrição Turno
             if (el.classList.contains('restr-turno')) {
-                el.closest('.opts-turno').querySelector('.just-turno').style.display = el.checked ? 'block' : 'none';
+                const justTurno = el.closest('.opts-turno').querySelector('.just-turno');
+                justTurno.style.display = el.value === 'Indisponivel' ? 'block' : 'none';
+                if (el.value !== 'Indisponivel') justTurno.value = '';
             }
 
             atualizarLimites();
         });
 
-        atualizarLimites(); // Roda ao iniciar
+        atualizarLimites();
 
-        // 3. Submissão e geração do JSON
-        document.getElementById('form-adp').addEventListener('submit', e => {
+        document.getElementById('form-adp').addEventListener('submit', async e => {
             e.preventDefault();
+            
+            // document.getElementById('falta').style.display = 'block';
+
+            const btnEnviar = document.getElementById('btn-enviar');
+            btnEnviar.disabled = true;
+            btnEnviar.innerText = "Enviando...";
+
             const data = { 
-                professor: document.getElementById('nome').value, 
+                professor: document.getElementById('nome').innerText, 
                 dias_adp: {} 
             };
 
@@ -232,20 +248,22 @@
                 const diaInt = box.querySelector('.dia-int').checked;
 
                 if (diaInt) {
-                    const restrito = box.querySelector('.restr-dia').checked;
+                    const statusVal = box.querySelector('.restr-dia').value;
+                    const isIndisponivel = statusVal === 'Indisponivel';
                     data.dias_adp[nomeDia] = {
                         tipo: 'dia_inteiro',
-                        restrito: restrito,
-                        justificativa: restrito ? box.querySelector('.just-dia').value : null
+                        status: statusVal,
+                        justificativa: isIndisponivel ? box.querySelector('.just-dia').value : null
                     };
                 } else {
                     const turnosObj = {};
                     box.querySelectorAll('.turno-chk:checked').forEach(t => {
                         const turnoContainer = t.closest('.turno');
-                        const isRestrito = turnoContainer.querySelector('.restr-turno').checked;
+                        const statusVal = turnoContainer.querySelector('.restr-turno').value;
+                        const isIndisponivel = statusVal === 'Indisponivel';
                         turnosObj[t.dataset.turno] = {
-                            restrito: isRestrito,
-                            justificativa: isRestrito ? turnoContainer.querySelector('.just-turno').value : null
+                            status: statusVal,
+                            justificativa: isIndisponivel ? turnoContainer.querySelector('.just-turno').value : null
                         };
                     });
                     if (Object.keys(turnosObj).length > 0) {
@@ -254,8 +272,26 @@
                 }
             });
 
-            console.log(JSON.stringify(data, null, 2));
-            // alert("Enviado! Abra o console (F12) para ver o JSON.");
+            console.log("JSON a ser enviado:", JSON.stringify(data, null, 2));
+
+            const scriptURL = "https://script.google.com/macros/s/AKfycbzl6fCNBIzxot0ebKvZdq4nIA0nYqN_KNzd4JW7ky7YMwGJ7y0rtRCzbl7DL44v25yH/exec";
+
+            try {
+                await fetch(scriptURL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(data)
+                });
+                alert("Preferências enviadas com sucesso!");
+            } catch (error) {
+                console.error('Erro!', error.message);
+                alert("Ocorreu um erro ao enviar. Tente novamente.");
+            } finally {
+                btnEnviar.disabled = false;
+                btnEnviar.innerText = "Enviar";
+            }
         });
     </script>
 </body>
