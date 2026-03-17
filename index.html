@@ -276,15 +276,27 @@
 
             const scriptURL = "https://script.google.com/macros/s/AKfycbzl6fCNBIzxot0ebKvZdq4nIA0nYqN_KNzd4JW7ky7YMwGJ7y0rtRCzbl7DL44v25yH/exec";
 
+
+
+
+
+
             try {
-                await fetch(scriptURL, {
+                const response = await fetch(scriptURL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8',
                     },
                     body: JSON.stringify(data)
                 });
-                alert("Preferências enviadas com sucesso!");
+                
+                const result = await response.json();
+                
+                if (result.status === 'sucesso') {
+                    alert("Preferências enviadas com sucesso!");
+                } else {
+                    alert(result.mensagem); 
+                }
             } catch (error) {
                 console.error('Erro!', error.message);
                 alert("Ocorreu um erro ao enviar. Tente novamente.");
@@ -292,6 +304,15 @@
                 btnEnviar.disabled = false;
                 btnEnviar.innerText = "Enviar";
             }
+
+
+
+
+
+
+
+
+
         });
     </script>
 </body>
