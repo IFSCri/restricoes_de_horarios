@@ -49,19 +49,12 @@
                 <ul>
                     <li>A comissão tentará atender a todas as solicitações, mas poderão ocorrer conflitos de preferência e de espaço físico.</li>
                     <li>Não havendo necessidade de restrição de horários, considere fortemente a possibilidade de não os cadastrar.</li>
-                    <li>Ao escolher os seus dias, atente aos horários habituais de oferta dos seus cursos.</li>
+                    <li>Ao escolher os turnos, tenha em mente os horários habituais de oferta dos cursos que você atua, sabendo que é sempre prioritário o funcionamento destes.</li>
                     <li>Caso compartilhe horários com outros professores combine os horários de forma a evitar conflitos.</li>
                     <li>Caso haja conflitos que impeçam o atendimento de restrições, as justificativas informadas serão avaliadas.</li>
-                    <li>Se desejar mudanças após a divulgação dos horários, converse previamente com os professores afetados, considerando o espaço físico, e encaminhem a nova sugestão para avaliação da comissão através de e-mail com cópia para todos.</li>
+                    <li>Se desejar mudanças após a divulgação dos horários, converse previamente com os professores afetados, considerando o espaço físico, e encaminhem a nova sugestão para avaliação da comissão através de e-mail com cópia para todos os envolvidos.</li>
                 </ul>
             </div>
-
-<!--             <div class="observacoes" id="falta" style="background-color: #e74c3c;display: none;">
-                <strong>Falta ainda:</strong>
-                <ul>
-                    <li>- Fazer uma planilha que receba as restrições no formato que o aplicativo que gera horário aceita. Colocar na planilha lista de e-mails e período que o formulário estará disponível.</li>
-                </ul>
-            </div> -->
 
             <button type="submit" id="btn-enviar">Enviar</button>
         </div>
@@ -110,11 +103,11 @@
                         <label class="lbl-restr-turno">
                             Status:
                             <select class="restr-turno">
-                                <option value="Evitar" selected>Evitar</option>
-                                <option value="Indisponivel">Indisponível</option>
+                                <option value="Indisponivel" selected>Estou indisponível</option>
+                                <option value="Evitar">Evite se possível</option>
                             </select>
                         </label>
-                        <input type="text" class="just-turno" placeholder="Justificativa da indisponibilidade..." style="display:none;">
+                        <input type="text" class="just-turno" placeholder="Motivo da indisponibilidade..." style="display:none;">
                     </div>
                 </div>
             `).join('');
@@ -127,11 +120,11 @@
                         <label class="lbl-restr-dia">
                             Status:
                             <select class="restr-dia">
-                                <option value="Evitar" selected>Evitar</option>
-                                <option value="Indisponivel">Indisponível</option>
+                                <option value="Indisponivel" selected>Estou indisponível</option>
+                                <option value="Evitar">Evite se possível</option>
                             </select>
                         </label>
-                        <input type="text" class="just-dia" placeholder="Justificativa da indisponibilidade..." style="display:none;">
+                        <input type="text" class="just-dia" placeholder="Motivo da indisponibilidade..." style="display:none;">
                     </div>
                     <hr style="border:0; border-top: 1px solid #eee; margin: 15px 0;">
                     <div class="turnos-box">${turnosHtml}</div>
@@ -140,16 +133,21 @@
         });
 
         function atualizarLimites() {
-            const diasInt = document.querySelectorAll('.dia-int:checked').length;
-            const turnosSel = document.querySelectorAll('.turno-chk:checked').length;
-            const diasRestr = Array.from(document.querySelectorAll('.restr-dia')).filter(s => s.value === 'Indisponivel').length;
-            const turnosRestr = Array.from(document.querySelectorAll('.restr-turno')).filter(s => s.value === 'Indisponivel').length;
+            let totalPontos = 0;
 
-            const maxTurnos = diasInt === 2 ? 0 : (diasInt === 1 ? 2 : 5);
+            document.querySelectorAll('.dia-int:checked').forEach(cb => {
+                const status = cb.closest('.dia').querySelector('.restr-dia').value;
+                totalPontos += status === 'Indisponivel' ? 6 : 3;
+            });
+
+            document.querySelectorAll('.turno-chk:checked').forEach(cb => {
+                const status = cb.closest('.turno').querySelector('.restr-turno').value;
+                totalPontos += status === 'Indisponivel' ? 2 : 1;
+            });
 
             document.querySelectorAll('.dia-int').forEach(cb => {
                 if (!cb.checked) {
-                    cb.disabled = diasInt >= 2;
+                    cb.disabled = (totalPontos + 3 > 6);
                     cb.parentElement.classList.toggle('disabled-text', cb.disabled);
                 }
             });
@@ -157,14 +155,14 @@
             document.querySelectorAll('.restr-dia').forEach(sel => {
                 const optIndisp = sel.querySelector('option[value="Indisponivel"]');
                 if (sel.value !== 'Indisponivel') {
-                    optIndisp.disabled = diasRestr >= 1;
+                    optIndisp.disabled = (totalPontos + 3 > 6);
                 }
             });
 
             document.querySelectorAll('.turno-chk').forEach(cb => {
                 const isDiaInt = cb.closest('.dia').querySelector('.dia-int').checked;
                 if (!cb.checked) {
-                    cb.disabled = isDiaInt || turnosSel >= maxTurnos;
+                    cb.disabled = isDiaInt || (totalPontos + 1 > 6);
                     cb.parentElement.classList.toggle('disabled-text', cb.disabled);
                 }
             });
@@ -172,7 +170,7 @@
             document.querySelectorAll('.restr-turno').forEach(sel => {
                 const optIndisp = sel.querySelector('option[value="Indisponivel"]');
                 if (sel.value !== 'Indisponivel') {
-                    optIndisp.disabled = turnosRestr >= 2;
+                    optIndisp.disabled = (totalPontos + 1 > 6);
                 }
             });
         }
@@ -183,17 +181,35 @@
 
             const box = el.closest('.dia');
 
+            const calcPontos = (ignorarElem) => {
+                let pts = 0;
+                document.querySelectorAll('.dia-int:checked').forEach(cb => {
+                    if (cb !== ignorarElem) pts += cb.closest('.dia').querySelector('.restr-dia').value === 'Indisponivel' ? 6 : 3;
+                });
+                document.querySelectorAll('.turno-chk:checked').forEach(cb => {
+                    if (cb !== ignorarElem) pts += cb.closest('.turno').querySelector('.restr-turno').value === 'Indisponivel' ? 2 : 1;
+                });
+                return pts;
+            };
+
             if (el.classList.contains('dia-int')) {
                 box.classList.toggle('selecionado', el.checked);
                 box.querySelector('.opts-dia').style.display = el.checked ? 'block' : 'none';
+                
+                if (el.checked) {
+                    const select = box.querySelector('.restr-dia');
+                    select.value = (calcPontos(el) + 6 > 6) ? 'Evitar' : 'Indisponivel';
+                    box.querySelector('.just-dia').style.display = select.value === 'Indisponivel' ? 'block' : 'none';
+                }
+
                 if (!el.checked) {
-                    box.querySelector('.restr-dia').value = 'Evitar';
+                    box.querySelector('.restr-dia').value = 'Indisponivel';
                     box.querySelector('.just-dia').style.display = 'none';
                     box.querySelector('.just-dia').value = '';
                 }
                 box.querySelectorAll('.turno-chk, .restr-turno').forEach(t => {
                     if (t.tagName === 'INPUT') t.checked = false;
-                    if (t.tagName === 'SELECT') t.value = 'Evitar';
+                    if (t.tagName === 'SELECT') t.value = 'Indisponivel';
                     t.disabled = el.checked; 
                 });
                 box.querySelectorAll('.opts-turno, .just-turno').forEach(opt => {
@@ -212,8 +228,15 @@
                 el.closest('.turno').classList.toggle('selecionado', el.checked);
                 const optsTurno = el.closest('.turno').querySelector('.opts-turno');
                 optsTurno.style.display = el.checked ? 'block' : 'none';
+                
+                if (el.checked) {
+                    const select = optsTurno.querySelector('.restr-turno');
+                    select.value = (calcPontos(el) + 2 > 6) ? 'Evitar' : 'Indisponivel';
+                    optsTurno.querySelector('.just-turno').style.display = select.value === 'Indisponivel' ? 'block' : 'none';
+                }
+
                 if (!el.checked) {
-                    optsTurno.querySelector('.restr-turno').value = 'Evitar';
+                    optsTurno.querySelector('.restr-turno').value = 'Indisponivel';
                     optsTurno.querySelector('.just-turno').style.display = 'none';
                     optsTurno.querySelector('.just-turno').value = '';
                 }
@@ -232,8 +255,6 @@
 
         document.getElementById('form-adp').addEventListener('submit', async e => {
             e.preventDefault();
-            
-            // document.getElementById('falta').style.display = 'block';
 
             const btnEnviar = document.getElementById('btn-enviar');
             btnEnviar.disabled = true;
@@ -277,11 +298,6 @@
 
             const scriptURL = "https://script.google.com/macros/s/AKfycbzl6fCNBIzxot0ebKvZdq4nIA0nYqN_KNzd4JW7ky7YMwGJ7y0rtRCzbl7DL44v25yH/exec";
 
-
-
-
-
-
             try {
                 const response = await fetch(scriptURL, {
                     method: 'POST',
@@ -305,15 +321,6 @@
                 btnEnviar.disabled = false;
                 btnEnviar.innerText = "Enviar";
             }
-
-
-
-
-
-
-
-
-
         });
     </script>
 </body>
