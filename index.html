@@ -273,50 +273,57 @@
 
             const nomeArquivo = `Restrições cadastradas às ${hh}ː${min}ː${ss} de ${dd}-${mm}-${aa} (${email}).pdf`;
 
-            // Oculta o botão de enviar do PDF
             const btn = document.getElementById('btn-enviar');
             btn.style.display = 'none';
 
-            // Ajusta o CSS do formulário temporariamente
             const formElement = document.getElementById('form-adp');
+            const gridDias = document.getElementById('grid-dias');
+            
+            // Força o scroll para o topo
+            window.scrollTo(0, 0);
+
+            // Salva as propriedades CSS atuais
             const oldMaxWidth = formElement.style.maxWidth;
+            const oldWidth = formElement.style.width;
             const oldMargin = formElement.style.margin;
             const oldBoxShadow = formElement.style.boxShadow;
+            const oldFlexWrap = gridDias.style.flexWrap;
+            const oldJustifyContent = gridDias.style.justifyContent;
             
+            // Modifica as propriedades temporariamente para caber tudo numa linha horizontal
             formElement.style.maxWidth = 'none';
+            formElement.style.width = 'max-content'; // Permite crescer conforme necessário
             formElement.style.margin = '0';
             formElement.style.boxShadow = 'none';
+            gridDias.style.flexWrap = 'nowrap'; // Garante os 5 dias lado a lado sem quebra
+            gridDias.style.justifyContent = 'flex-start';
 
-            // Adiciona a marcação de tempo ao formulário temporariamente
             const carimboTempo = document.createElement('div');
             carimboTempo.innerHTML = `<h3 style="color: #c0392b; text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px;">Comprovativo de submissão gerado em: ${dd}/${mm}/20${aa} às ${hh}:${min}:${ss}</h3>`;
             formElement.insertBefore(carimboTempo, formElement.firstChild);
 
-            // Calcula o tamanho exato do elemento para definir a dimensão do PDF
-            const pdfLarguraPx = formElement.scrollWidth;
-            const pdfAlturaPx = formElement.scrollHeight;
-            
-            // Fator de conversão de px para mm (aproximado)
-            const mmPorPx = 0.264583;
-            const pdfLarguraMm = pdfLarguraPx * mmPorPx + 20; // 20mm adicionais para as margens
-            const pdfAlturaMm = pdfAlturaPx * mmPorPx + 20;
+            // Mede as dimensões exatas na tela
+            const pdfLarguraPx = formElement.scrollWidth + 40;
+            const pdfAlturaPx = formElement.scrollHeight + 40;
 
             const opt = {
-                margin:       10, // mm
+                margin:       20,
                 filename:     nomeArquivo,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, windowWidth: pdfLarguraPx + 40 },
-                // Array dinâmico [largura, altura] remove a necessidade de tamanhos de folha padrão
-                jsPDF:        { unit: 'mm', format: [pdfLarguraMm, pdfAlturaMm], orientation: pdfLarguraMm > pdfAlturaMm ? 'landscape' : 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, scrollY: 0, windowWidth: pdfLarguraPx },
+                jsPDF:        { unit: 'px', format: [pdfLarguraPx, pdfAlturaPx], orientation: 'landscape' }
             };
 
             await html2pdf().set(opt).from(formElement).save();
 
-            // Restaura o formulário ao normal
+            // Restaura o formato original
             formElement.removeChild(carimboTempo);
             formElement.style.maxWidth = oldMaxWidth;
+            formElement.style.width = oldWidth;
             formElement.style.margin = oldMargin;
             formElement.style.boxShadow = oldBoxShadow;
+            gridDias.style.flexWrap = oldFlexWrap;
+            gridDias.style.justifyContent = oldJustifyContent;
             btn.style.display = 'block';
         }
 
@@ -325,7 +332,7 @@
 
             const btnEnviar = document.getElementById('btn-enviar');
             btnEnviar.disabled = true;
-            btnEnviar.innerText = "Enviando e Gerando PDF...";
+            btnEnviar.innerText = "Enviando...";
 
             const emailDocente = document.getElementById('nome').innerText;
 
@@ -363,9 +370,6 @@
                 }
             });
 
-            // Gera e descarrega o PDF antes de tentar enviar
-            await gerarPDF(emailDocente);
-
             const scriptURL = "https://script.google.com/macros/s/AKfycbzl6fCNBIzxot0ebKvZdq4nIA0nYqN_KNzd4JW7ky7YMwGJ7y0rtRCzbl7DL44v25yH/exec";
 
             try {
@@ -380,16 +384,18 @@
                 const result = await response.json();
                 
                 if (result.status === 'sucesso') {
+                    btnEnviar.innerText = "Gerando Comprovante...";
+                    await gerarPDF(emailDocente);
                     alert("Preferências enviadas e PDF guardado com sucesso!");
                 } else {
                     alert(result.mensagem); 
                 }
             } catch (error) {
                 console.error('Erro!', error.message);
-                alert("Ocorreu um erro ao enviar para o servidor, mas o seu PDF foi guardado como backup. Tente enviar novamente.");
+                alert("Ocorreu um erro ao enviar para o servidor. Tente novamente.");
             } finally {
                 btnEnviar.disabled = false;
-                btnEnviar.innerText = "Enviar";
+                btnEnviar.innerText = "Enviar e imprimir comprovante";
             }
         });
     </script>
